@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSON 格式化與驗證工具｜OnWorks (onworks.cc)</title>
+  <meta name="description" content="免費線上 JSON 格式化、單行壓縮與語法驗證工具，於瀏覽器本機端即時運算，不儲存您的資料。">
+  <link rel="canonical" href="https://onworks.cc/tools/json-formatter.html">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav-inner">
+      <a class="brand" href="/">
+        <span class="brand-mark">OW</span>
+        <span>OnWorks</span>
+      </a>
+      <nav class="nav-links" aria-label="主導覽列">
+        <a href="/">首頁</a>
+        <a href="/#tools" class="active">工具目錄</a>
+        <a href="/about.html">關於我們</a>
+        <a href="/privacy.html">隱私權政策</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="section">
+    <div class="container">
+      <div class="section-header">
+        <h1>JSON 格式化與驗證工具</h1>
+        <p>貼上 JSON 字串即可即時縮排排版、壓縮成單行並檢查語法是否正確，全程於瀏覽器本機運算。</p>
+      </div>
+
+      <section class="tool-panel" aria-label="JSON 處理器">
+        <label for="json-input" style="font-weight: 600; display: block; margin-bottom: 8px;">輸入 JSON 內容</label>
+        <textarea id="json-input" class="tool-textarea" placeholder='例如：{"site":"onworks.cc","tools":["json","encoder","timestamp"]}'></textarea>
+
+        <div class="tool-controls">
+          <button type="button" class="btn btn-primary" id="btn-format">格式化（2 空格）</button>
+          <button type="button" class="btn btn-secondary" id="btn-format-4">格式化（4 空格）</button>
+          <button type="button" class="btn btn-secondary" id="btn-minify">單行壓縮</button>
+          <button type="button" class="btn btn-secondary" id="btn-copy">複製結果</button>
+          <button type="button" class="btn btn-secondary" id="btn-sample">載入範例</button>
+          <button type="button" class="btn btn-secondary" id="btn-clear">清空</button>
+        </div>
+
+        <div id="status-msg" class="status-msg" role="status" aria-live="polite"></div>
+      </section>
+
+      <article class="prose-card" style="margin-top: 24px;">
+        <h2>工具說明與常見 JSON 語法錯誤</h2>
+        <p>
+          JSON（JavaScript Object Notation）是 API 回傳與設定檔最常使用的輕量級資料交換格式。透過本工具可快速將擠成一行的 API 回應展開為易讀階層，或在送出請求前先壓縮體積並確認格式正確。
+        </p>
+        <ul>
+          <li><strong>多餘的尾隨逗號：</strong>最後一個屬性或陣列元素後方不能有逗號（例如 <code>{"a": 1,}</code> 會導致解析失敗）。</li>
+          <li><strong>引號格式錯誤：</strong>JSON 的鍵名（Key）與字串值必須使用雙引號 <code>"</code>，不能使用單引號 <code>'</code>。</li>
+          <li><strong>包含註解：</strong>標準 JSON 不支援 <code>//</code> 或 <code>/* ... */</code> 註解語法。</li>
+        </ul>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>© 2026 OnWorks (onworks.cc) · <a href="mailto:houck45@gmail.com">houck45@gmail.com</a></div>
+      <div class="footer-links">
+        <a href="/">回到首頁</a>
+        <a href="/privacy.html">隱私權政策</a>
+        <a href="/terms.html">使用條款與免責聲明</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      const input = document.getElementById('json-input');
+      const status = document.getElementById('status-msg');
+
+      function showStatus(msg, type) {
+        status.textContent = msg;
+        status.className = 'status-msg ' + type;
+      }
+
+      function parseInput() {
+        const raw = input.value.trim();
+        if (!raw) {
+          showStatus('請先輸入要處理的 JSON 內容。', 'error');
+          return null;
+        }
+        try {
+          return JSON.parse(raw);
+        } catch (err) {
+          showStatus('JSON 語法錯誤：' + err.message, 'error');
+          return null;
+        }
+      }
+
+      document.getElementById('btn-format').addEventListener('click', function () {
+        const data = parseInput();
+        if (data !== null) {
+          input.value = JSON.stringify(data, null, 2);
+          showStatus('JSON 驗證通過，已完成 2 空格格式化。', 'success');
+        }
+      });
+
+      document.getElementById('btn-format-4').addEventListener('click', function () {
+        const data = parseInput();
+        if (data !== null) {
+          input.value = JSON.stringify(data, null, 4);
+          showStatus('JSON 驗證通過，已完成 4 空格格式化。', 'success');
+        }
+      });
+
+      document.getElementById('btn-minify').addEventListener('click', function () {
+        const data = parseInput();
+        if (data !== null) {
+          input.value = JSON.stringify(data);
+          showStatus('JSON 驗證通過，已壓縮為單行格式。', 'success');
+        }
+      });
+
+      document.getElementById('btn-copy').addEventListener('click', async function () {
+        if (!input.value) {
+          showStatus('目前沒有可複製的內容。', 'error');
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(input.value);
+          showStatus('已複製到剪貼簿。', 'success');
+        } catch (err) {
+          input.select();
+          showStatus('請按 Ctrl+C / Cmd+C 手動複製選取文字。', 'error');
+        }
+      });
+
+      document.getElementById('btn-sample').addEventListener('click', function () {
+        input.value = JSON.stringify({
+          platform: 'OnWorks',
+          domain: 'onworks.cc',
+          features: ['JSON 格式化', 'Base64 編解碼', 'Unix 時間戳換算'],
+          privacyFirst: true
+        });
+        showStatus('已載入範例 JSON，可點擊「格式化」查看排版結果。', 'success');
+      });
+
+      document.getElementById('btn-clear').addEventListener('click', function () {
+        input.value = '';
+        status.className = 'status-msg';
+        status.textContent = '';
+      });
+    })();
+  </script>
+</body>
+</html>

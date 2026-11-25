@@ -1,0 +1,2 @@
+# 申請 Google AdSense 後，請將這兩行註解刪除，並貼入後台提供給你的設定：
+# google.com, pub-你的發布商ID, DIRECT, f08c47fec0942fa0

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Base64 / URL / Unicode 編解碼工具｜OnWorks (onworks.cc)</title>
+  <meta name="description" content="線上進行 UTF-8 Base64 編碼解碼、URL Encode/Decode 與 Unicode 跳脫字元轉換，瀏覽器端即時處理。">
+  <link rel="canonical" href="https://onworks.cc/tools/encoder.html">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav-inner">
+      <a class="brand" href="/">
+        <span class="brand-mark">OW</span>
+        <span>OnWorks</span>
+      </a>
+      <nav class="nav-links" aria-label="主導覽列">
+        <a href="/">首頁</a>
+        <a href="/#tools" class="active">工具目錄</a>
+        <a href="/about.html">關於我們</a>
+        <a href="/privacy.html">隱私權政策</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="section">
+    <div class="container">
+      <div class="section-header">
+        <h1>Base64 / URL / Unicode 編解碼工具</h1>
+        <p>完整支援 UTF-8 中文字元轉換，輕鬆在原始文字與各種常用編碼格式之間雙向切換。</p>
+      </div>
+
+      <section class="tool-panel" aria-label="編解碼轉換器">
+        <label for="text-input" style="font-weight: 600; display: block; margin-bottom: 8px;">輸入文字內容</label>
+        <textarea id="text-input" class="tool-textarea" placeholder="請貼上要編碼或解碼的文字、網址或 Base64 字串..."></textarea>
+
+        <div class="tool-controls">
+          <button type="button" class="btn btn-primary" data-op="b64enc">Base64 編碼</button>
+          <button type="button" class="btn btn-secondary" data-op="b64dec">Base64 解碼</button>
+          <button type="button" class="btn btn-primary" data-op="urlenc">URL 編碼</button>
+          <button type="button" class="btn btn-secondary" data-op="urldec">URL 解碼</button>
+          <button type="button" class="btn btn-primary" data-op="unienc">轉 Unicode (\uXXXX)</button>
+          <button type="button" class="btn btn-secondary" data-op="unidec">還原 Unicode</button>
+          <button type="button" class="btn btn-secondary" id="btn-copy">複製結果</button>
+          <button type="button" class="btn btn-secondary" id="btn-clear">清空</button>
+        </div>
+
+        <label for="text-output" style="font-weight: 600; display: block; margin: 14px 0 8px;">轉換結果</label>
+        <textarea id="text-output" class="tool-textarea" readonly placeholder="轉換結果會顯示在這裡..."></textarea>
+
+        <div id="status-msg" class="status-msg" role="status" aria-live="polite"></div>
+      </section>
+
+      <article class="prose-card" style="margin-top: 24px;">
+        <h2>常見編碼用途說明</h2>
+        <ul>
+          <li><strong>Base64 編碼：</strong>將任意二進位或 UTF-8 文字轉換為純 ASCII 字元，常用於 HTTP Authorization 標頭、Data URI 或設定檔傳輸。</li>
+          <li><strong>URL 編碼（Percent-encoding）：</strong>將網址中的中文、空白與特殊符號轉為 <code>%XX</code> 格式，確保瀏覽器與伺服器能正確傳遞查詢參數。</li>
+          <li><strong>Unicode 跳脫字元：</strong>將非 ASCII 字元轉為 <code>\uXXXX</code> 形式，便於在 Java、JavaScript 或屬性檔中檢視與除錯。</li>
+        </ul>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>© 2026 OnWorks (onworks.cc) · <a href="mailto:houck45@gmail.com">houck45@gmail.com</a></div>
+      <div class="footer-links">
+        <a href="/">回到首頁</a>
+        <a href="/privacy.html">隱私權政策</a>
+        <a href="/terms.html">使用條款與免責聲明</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      const input = document.getElementById('text-input');
+      const output = document.getElementById('text-output');
+      const status = document.getElementById('status-msg');
+
+      function showStatus(msg, type) {
+        status.textContent = msg;
+        status.className = 'status-msg ' + type;
+      }
+
+      function utf8ToBase64(str) {
+        const bytes = new TextEncoder().encode(str);
+        let binary = '';
+        for (let i = 0; i < bytes.length; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary);
+      }
+
+      function base64ToUtf8(b64) {
+        const clean = b64.replace(/\s+/g, '');
+        const binary = atob(clean);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        return new TextDecoder().decode(bytes);
+      }
+
+      function toUnicode(str) {
+        let res = '';
+        for (const ch of str) {
+          const code = ch.codePointAt(0);
+          if (code > 127) {
+            if (code <= 0xffff) {
+              res += '\\u' + code.toString(16).padStart(4, '0');
+            } else {
+              const offset = code - 0x10000;
+              const hi = 0xd800 + (offset >> 10);
+              const lo = 0xdc00 + (offset & 0x3ff);
+              res += '\\u' + hi.toString(16) + '\\u' + lo.toString(16);
+            }
+          } else {
+            res += ch;
+          }
+        }
+        return res;
+      }
+
+      function fromUnicode(str) {
+        return str.replace(/\\u([0-9a-fA-F]{4})/g, function (_, hex) {
+          return String.fromCharCode(parseInt(hex, 16));
+        });
+      }
+
+      document.querySelectorAll('[data-op]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          const val = input.value;
+          if (!val) {
+            showStatus('請先輸入要轉換的文字。', 'error');
+            return;
+          }
+          const op = btn.getAttribute('data-op');
+          try {
+            if (op === 'b64enc') {
+              output.value = utf8ToBase64(val);
+              showStatus('已完成 Base64 編碼。', 'success');
+            } else if (op === 'b64dec') {
+              output.value = base64ToUtf8(val);
+              showStatus('已完成 Base64 解碼。', 'success');
+            } else if (op === 'urlenc') {
+              output.value = encodeURIComponent(val);
+              showStatus('已完成 URL 編碼。', 'success');
+            } else if (op === 'urldec') {
+              output.value = decodeURIComponent(val);
+              showStatus('已完成 URL 解碼。', 'success');
+            } else if (op === 'unienc') {
+              output.value = toUnicode(val);
+              showStatus('已完成 Unicode 跳脫編碼。', 'success');
+            } else if (op === 'unidec') {
+              output.value = fromUnicode(val);
+              showStatus('已完成 Unicode 還原。', 'success');
+            }
+          } catch (err) {
+            showStatus('轉換失敗，請確認輸入格式是否正確（' + err.message + '）。', 'error');
+          }
+        });
+      });
+
+      document.getElementById('btn-copy').addEventListener('click', async function () {
+        if (!output.value) {
+          showStatus('目前沒有可複製的結果。', 'error');
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(output.value);
+          showStatus('已複製轉換結果到剪貼簿。', 'success');
+        } catch (err) {
+          output.select();
+          showStatus('請按 Ctrl+C / Cmd+C 手動複製選取文字。', 'error');
+        }
+      });
+
+      document.getElementById('btn-clear').addEventListener('click', function () {
+        input.value = '';
+        output.value = '';
+        status.className = 'status-msg';
+        status.textContent = '';
+      });
+    })();
+  </script>
+</body>
+</html>
